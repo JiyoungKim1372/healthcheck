@@ -36,27 +36,23 @@ healthchek reservation
 ## 1. 분석/설계
 
 ### Event Storming 결과
-![489546E2-B902-49D4-A6AE-1F4C2BD0E6C2](https://user-images.githubusercontent.com/82069747/122322611-b414bc80-cf60-11eb-8cf9-feba63327fcf.jpeg)
+![image](https://user-images.githubusercontent.com/82069747/122672248-869c6d00-d205-11eb-8b2f-e6db51e4e736.png)
 
 
 ### 헥사고날 아키텍처 다이어그램 도출
-![1651DFF6-25E1-48E5-B9BB-D973DF77246C_4_5005_c](https://user-images.githubusercontent.com/82069747/122388677-11356000-cfab-11eb-94e2-e61b44f2c300.jpeg)
-
+![image](https://user-images.githubusercontent.com/82069747/122672427-70db7780-d206-11eb-9721-20e0eb5a186c.png)
 
 ## 2. 구현
-분석/설계 단계에서 도출된 헥사고날 아키텍처에 따라, 구현한 각 서비스를 로컬에서 실행하는 방법은 아래와 같다 (각각의 포트넘버는 8081 ~ 8085 이다)
+분석/설계 단계에서 도출된 헥사고날 아키텍처에 따라, 구현한 각 서비스를 로컬에서 실행하는 방법은 아래와 같다 (각각의 포트넘버는 8081 ~ 8084 이다)
 ```
-  cd musical
+  cd schedule
   mvn spring-boot:run  
   
   cd reservation
   mvn spring-boot:run  
 
-  cd payment
+  cd delivery
   mvn spring-boot:run
-
-  cd notice
-  mvn spring-boot:run 
 
   cd customercenter
   mvn spring-boot:run  
@@ -69,10 +65,10 @@ msaez.io를 통해 구현한 Aggregate 단위로 Entity를 선언 후, 구현을
 
 Entity Pattern과 Repository Pattern을 적용하기 위해 Spring Data REST의 RestRepository를 적용하였다.
 
-**Musical 서비스의 musical.java**
+** schedule 서비스의 schedule.java**
 
 ```java
-package outerpark;
+package healthcheck;
 
 import javax.persistence.*;
 import org.springframework.beans.BeanUtils;
@@ -80,28 +76,27 @@ import java.util.List;
 import java.util.Date;
 
 @Entity
-@Table(name="Musical_table")
-public class Musical {
+@Table(name="Schedule_table")
+public class Schedule {
 
     @Id
     @GeneratedValue(strategy=GenerationType.AUTO)
     private Long id;
-    private Long musicalId;
-    private String name;
-    private Integer reservableSeat;
+    private Long scheduleId;
+    private Integer availableCount;
 
     @PostPersist
     public void onPostPersist(){
-        MusicalRegistered musicalRegistered = new MusicalRegistered();
-        BeanUtils.copyProperties(this, musicalRegistered);
-        musicalRegistered.publishAfterCommit();
+        ScheduleResistered scheduleResistered = new ScheduleResistered();
+        BeanUtils.copyProperties(this, scheduleResistered);
+        scheduleResistered.publishAfterCommit();
     }
 
     @PostUpdate
     public void onPostUpdate(){
-        SeatModified seatModified = new SeatModified();
-        BeanUtils.copyProperties(this, seatModified);
-        seatModified.publishAfterCommit();
+        CountModified countModified = new CountModified();
+        BeanUtils.copyProperties(this, countModified);
+        countModified.publishAfterCommit();
     }
 
     public Long getId() {
@@ -111,29 +106,24 @@ public class Musical {
     public void setId(Long id) {
         this.id = id;
     }
-    public Long getMusicalId() {
-        return musicalId;
+    public Long getScheduleId() {
+        return scheduleId;
     }
 
-    public void setMusicalId(Long musicalId) {
-        this.musicalId = musicalId;
+    public void setScheduleId(Long scheduleId) {
+        this.scheduleId = scheduleId;
     }
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
+    public Integer getAvailableCount() {
+        return availableCount;
     }
 
-    public Integer getReservableSeat() {
-        return reservableSeat;
+    public void setAvailableCount(Integer availableCount) {
+        this.availableCount = availableCount;
     }
 
-    public void setReservableSeat(Integer reservableSeat) {
-        this.reservableSeat = reservableSeat;
-    }
 }
+
+
 ```
 
 **Payment 서비스의 PolicyHandler.java**
