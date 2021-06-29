@@ -235,12 +235,12 @@ http POST http://gateway:8080/musicals musicalId=1003 name=HOT reservableSeat=10
 - 테스트 시나리오의 3.4 과 5.4 항목에 해당
 
 [Correlation]
-- 예약을 하게되면 reservation > payment > notice > MyPage로 주문이 Assigned 되고, 주문 취소가 되면 Status가 deliveryCancelled로 Update 되는 것을 볼 수 있다.
+- 예약을 하게되면 reservation > delivery > MyPage로 예약정보가 Assigned 되고, 예약이 취소가 되면 Status가 deliveryCancelled로 Update 되는 것을 볼 수 있다.
 - 또한 Correlation Key를 구현하기 위해 각 마이크로서비스에서 관리하는 데이터의 Id값을 전달받아서 서비스간의 연관 처리를 수행하였다.
 - 이 결과로 서로 다른 마이크로 서비스 간에 트랜잭션이 묶여 있음을 알 수 있다.
 
 [Req/Resp]
-- musical 마이크로서비스의 잔여좌석수를 초과한 예약 시도시에는, reservation 마이크로서비스에서 예약이 되지 않도록 처리함
+- schedule 마이크로서비스의 예약가능인원을 초과한 예약 시도시에는, reservation 마이크로서비스에서 예약이 되지 않도록 처리함
 - FeignClient 를 이용한 Req/Resp 연동
 - 테스트 시나리오의 2.1, 2.2, 2.3 항목에 해당하며, 동기호출 결과는 3.1(예약성공시)과 5.1(예약실패시)에서 확인할 수 있다.
 ```
@@ -250,7 +250,8 @@ http POST http://gateway:8080/musicals musicalId=1003 name=HOT reservableSeat=10
 
 **<구현기능 점검을 위한 테스트 시나리오>**
 
-![image](https://user-images.githubusercontent.com/84003381/122501058-e4c32780-d02e-11eb-9ca7-5c2637c4480d.png)
+![image](https://user-images.githubusercontent.com/82069747/123797882-9dd40c80-d921-11eb-865d-c054056fd78e.png)
+
 
 
 **1. MD가 뮤지컬 정보 등록**
