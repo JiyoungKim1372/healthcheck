@@ -126,12 +126,12 @@ public class Schedule {
 
 ```
 
-**Payment 서비스의 PolicyHandler.java**
+** Schedule 서비스의 PolicyHandler.java**
 
 ```java
-package outerpark;
+package healthcheck;
 
-import outerpark.config.kafka.KafkaProcessor;
+import healthcheck.config.kafka.KafkaProcessor;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -141,65 +141,57 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class PolicyHandler{
-    @Autowired PaymentRepository paymentRepository;
+    @Autowired ScheduleRepository scheduleRepository;
 
     @StreamListener(KafkaProcessor.INPUT)
-    public void wheneverReserved_ApprovePayment(@Payload Reserved reserved){
-
-        if (reserved.validate()) {
-            System.out.println("\n\n##### listener ApprovePayment : " + reserved.toJson() + "\n\n");
-
-            // Process payment
-            Payment payment = new Payment();
-            payment.setReservationId(reserved.getId());
-            payment.setStatus("PaymentApproved");
-            paymentRepository.save(payment);
-        }
-    }
-
-    @StreamListener(KafkaProcessor.INPUT)
-    public void wheneverCanceled_CancelPayment(@Payload Canceled canceled){
+    public void wheneverCanceled_IncreaseCount(@Payload Canceled canceled){
 
         if(canceled.validate()) {
-            System.out.println("\n\n##### listener CancelPayment : " + canceled.toJson() + "\n\n");
 
-            // Cancel payment
-            Payment payment = paymentRepository.findByReservationId(canceled.getId());
-            payment.setStatus("PaymentCanceled");
-            paymentRepository.save(payment);
+        System.out.println("\n\n##### listener IncreaseCount : " + canceled.toJson() + "\n\n");
+
+        // 예약이 취소되면 예약가능 숫자가 증가한다. //
+        Schedule schedule = scheduleRepository.findByScheduleId(Long.valueOf(canceled.getScheduleId()));
+        schedule.setAvailableCount(schedule.getAvailableCount()+canceled.getReservationCount());
+        scheduleRepository.save(schedule); 
+
         }
     }
 
     @StreamListener(KafkaProcessor.INPUT)
     public void whatever(@Payload String eventString){}
+
+
 }
  
 ```
 
 DDD 적용 후 REST API의 테스트를 통하여 정상적으로 동작하는 것을 확인할 수 있었다.
 
-
 ### 2.2. Polyglot Persistence 구조
-musical, payment, notice, customercenter 서비스는 H2 DB를 사용하게끔 구성되어 있고
-reservation 서비스는 HSQLDB 를 사용하도록 구성되어 있어서, DB 부분을 Polyglot 구조로 동작하도록 처리하였다.
-
-
-**musical 서비스의 pom.xml 내 DB 설정부분**
-
-![image](https://user-images.githubusercontent.com/84003381/122390349-db917680-cfac-11eb-9895-e8bb50b8c4e6.png)
-
-
-**musical 서비스 spring boot 기동 로그**
-
-![image](https://user-images.githubusercontent.com/84003381/122398314-ba348880-cfb4-11eb-9593-77770a8e27f8.png)
+schedule, reservation, customercenter 서비스는 H2 DB를 사용하게 구성했고, 
+delivery 서비스는 HSQLDB 를 사용하도록 구성되어 있어서, DB 부분을 Polyglot 구조로 동작하도록 처리하였다.
 
 
 **reservation 서비스의 pom.xml 내 DB 설정부분**
 
-![image](https://user-images.githubusercontent.com/84003381/122391171-b3564780-cfad-11eb-9dd1-5d4850e148f6.png)
+![image](https://user-images.githubusercontent.com/82069747/123761229-92221f00-d8fc-11eb-847d-1f6fb96227ec.png)
+
 
 
 **reservation 서비스 spring boot 기동 로그**
+
+![image](https://user-images.githubusercontent.com/82069747/123760978-52f3ce00-d8fc-11eb-8dac-0db09f694b61.png)
+
+
+
+**delivery 서비스의 pom.xml 내 DB 설정부분**
+
+![image](https://user-images.githubusercontent.com/82069747/123743942-fd61f600-d8e8-11eb-8765-d1422e6ab0df.png)
+
+
+
+**delivery 서비스 spring boot 기동 로그**
 
 ![image](https://user-images.githubusercontent.com/84003381/122398334-be60a600-cfb4-11eb-8915-3eb916e0d831.png)
 
