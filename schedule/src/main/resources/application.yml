@@ -64,4 +64,4 @@ spring:
           contentType: application/json
 api: 
   url: 
-    musical: ${configurl}
+    schedule: ${configurl}
