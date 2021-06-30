@@ -38,14 +38,6 @@ logging:
 server:
   port: 8082
 
-feign:
-  hystrix:
-    enabled: true
-
-hystrix:
-  command:
-    default:
-      execution.isolation.thread.timeoutInMilliseconds: 610
 api: 
   url: 
     schedule: http://localhost:8081
@@ -74,3 +66,15 @@ spring:
         event-out:
           destination: healthcheck
           contentType: application/json
+api: 
+  url: 
+    schedule: ${configurl}
+
+feign:
+  hystrix:
+    enabled: true
+
+hystrix:
+  command:
+    default:
+      execution.isolation.thread.timeoutInMilliseconds: 610
