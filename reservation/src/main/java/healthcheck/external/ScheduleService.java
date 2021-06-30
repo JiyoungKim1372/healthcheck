@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import java.util.Date;
 
 //@FeignClient(name="schedule", url="http://schedule:8080")
-@FeignClient(name="schedule", url="http://localhost:8081")
+@FeignClient(name="schedule", url="${api.url.schedule}")
 public interface ScheduleService {
 
     @RequestMapping(method= RequestMethod.GET, path="/chkAndModifyCount")

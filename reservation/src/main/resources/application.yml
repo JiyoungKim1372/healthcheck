@@ -48,7 +48,7 @@ hystrix:
       execution.isolation.thread.timeoutInMilliseconds: 610
 api: 
   url: 
-    musical: http://localhost:8081
+    schedule: http://localhost:8081
 ---
 
 spring:
