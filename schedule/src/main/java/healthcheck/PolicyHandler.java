@@ -19,7 +19,7 @@ public class PolicyHandler{
 
         System.out.println("\n\n##### listener IncreaseCount : " + canceled.toJson() + "\n\n");
 
-        // 예약이 취소되면 예약가능 숫자가 ㅈ증가한다. //
+        // 예약이 취소되면 예약가능 숫자가 증가한다. //
         Schedule schedule = scheduleRepository.findByScheduleId(Long.valueOf(canceled.getScheduleId()));
         schedule.setAvailableCount(schedule.getAvailableCount()+canceled.getReservationCount());
         scheduleRepository.save(schedule); 
