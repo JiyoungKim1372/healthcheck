@@ -2,6 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: reservation
+  namespace: healthcheck
   labels:
     app: reservation
 spec:
@@ -16,9 +17,15 @@ spec:
     spec:
       containers:
         - name: reservation
-          image: username/reservation:latest
+          image: user03acr.azurecr.io/reservation:latest
           ports:
             - containerPort: 8080
+          env:
+            - name: configurl
+              valuefrom:
+                configMapKeyRef:
+                  name: apiurl
+                  key: url
           readinessProbe:
             httpGet:
               path: '/actuator/health'
