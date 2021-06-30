@@ -62,3 +62,6 @@ spring:
         event-out:
           destination: healthcheck
           contentType: application/json
+api: 
+  url: 
+    musical: ${configurl}

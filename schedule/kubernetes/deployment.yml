@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: schedule
-          image: username/schedule:latest
+          image: user03acr.azurecr.io/schedule:latest
           ports:
             - containerPort: 8080
           readinessProbe:
