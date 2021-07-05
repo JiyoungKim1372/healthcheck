@@ -175,14 +175,11 @@ delivery 서비스는 HSQLDB 를 사용하도록 구성되어 있어서, DB 부�
 
 **reservation 서비스의 pom.xml 내 DB 설정부분**
 
-![image](https://user-images.githubusercontent.com/82069747/123761229-92221f00-d8fc-11eb-847d-1f6fb96227ec.png)
-
-
+![image](https://user-images.githubusercontent.com/82069747/124418949-8f5d7900-dd97-11eb-9047-e080bfd1b40d.png)
 
 **reservation 서비스 spring boot 기동 로그**
 
-![image](https://user-images.githubusercontent.com/82069747/123760978-52f3ce00-d8fc-11eb-8dac-0db09f694b61.png)
-
+![image](https://user-images.githubusercontent.com/82069747/124418732-1b22d580-dd97-11eb-9714-5f201dd21ea5.png)
 
 
 **delivery 서비스의 pom.xml 내 DB 설정부분**
@@ -206,12 +203,9 @@ delivery 서비스는 HSQLDB 를 사용하도록 구성되어 있어서, DB 부�
 **gateway 테스트**
 
 ```
-http POST http://gateway:8080/musicals musicalId=1003 name=HOT reservableSeat=100000 
+http GET http://gateway:8080/reservations/3
 ```
-
-![image](https://user-images.githubusercontent.com/84000848/122344967-4b3e3c00-cf82-11eb-8bb1-9cd21999a6d3.png)
-
-![image](https://user-images.githubusercontent.com/84000848/122345044-601acf80-cf82-11eb-8b79-14a11fdd838e.png)
+![image](https://user-images.githubusercontent.com/82069747/124416471-07c13b80-dd92-11eb-81d7-14f27f22e28b.png)
 
 
 ### 2.4. Saga, CQRS, Correlation, Req/Resp
@@ -257,104 +251,58 @@ http POST http://gateway:8080/musicals musicalId=1003 name=HOT reservableSeat=10
 
 **1. 관리자가 건강검진 일정정보 등록**
 
-- http POST http://schedule:8080/schedules scheduleId=1 availableCount=100
+- http POST http://localhost:8081/schedules scheduleId=1 availableCount=100
 
-![image](https://user-images.githubusercontent.com/82069747/124410717-0853d500-dd86-11eb-8d7a-0863aa18ff47.png)
+![image](https://user-images.githubusercontent.com/82069747/124420335-4955e480-dd9a-11eb-8e13-79f26b43ec4e.png)
 
 
 **2. 고객이 건강검진 예약**
 
 2.1 정상예약 #1
 
-http POST http://reservation:8080/reservations reservationId=1  scheduleId=1 reservationCount=10
+- 10명 예약 (http POST http://reservation:8080/reservations reservationId=1  scheduleId=1 reservationCount=10)
 
-![image](https://user-images.githubusercontent.com/82069747/124410776-24577680-dd86-11eb-9b20-f3d4502248df.png)
+![image](https://user-images.githubusercontent.com/82069747/124420566-a5b90400-dd9a-11eb-9518-12fe123635d9.png)
 
-![image](https://user-images.githubusercontent.com/82069747/124410910-5f59aa00-dd86-11eb-9394-d856590017e5.png)
+- 배송상태확인 (http GET http://localhost:8083/deliveries/1)
 
-![image](https://user-images.githubusercontent.com/82069747/124411170-faeb1a80-dd86-11eb-9b11-caf8e1df30e3.png)
+![image](https://user-images.githubusercontent.com/82069747/124420606-b9646a80-dd9a-11eb-8c4d-94d5ffc30fea.png)
+
+- Mypage확인 (http GET http://localhost:8084/myPages/1)
+
+![image](https://user-images.githubusercontent.com/82069747/124420650-d436df00-dd9a-11eb-8ddb-d83f619ae635.png)
+
+- 예약가능수량 차감 확인 (http GET http://localhost:8081/schedules/1)
+![image](https://user-images.githubusercontent.com/82069747/124420765-00526000-dd9b-11eb-9184-c4c6f0fb008d.png)
 
 
 2.2 정상예약 #2
 
-- http POST http://reservation:8080/reservations reservationId=2  scheduleId=1 reservationCount=5 
+- 5명 예약 (http POST http://localhost:8082/reservations reservationId=2  scheduleId=1 reservationCount=5)
 
-![image](https://user-images.githubusercontent.com/82069747/124410994-8ca65800-dd86-11eb-8265-1ecade763e01.png)
+![image](https://user-images.githubusercontent.com/82069747/124420936-71921300-dd9b-11eb-9379-63ca0abbe0eb.png)
 
-![image](https://user-images.githubusercontent.com/82069747/124411027-9f209180-dd86-11eb-8429-2caad1588722.png)
-
-![image](https://user-images.githubusercontent.com/82069747/124411207-0e968100-dd87-11eb-8364-01833ad158bb.png)
-
-
+![image](https://user-images.githubusercontent.com/82069747/124421531-9a66d800-dd9c-11eb-8a33-3211cfd75d8c.png)
 
 2.3 예악 가능한 인원을 초과하여 예약시도 시에는 예약이 되지 않도록 처리함
 
 - FeignClient를 이용한 Req/Resp 연동
-- http POST http://localhost:8082/reservations musicalId="1" seats="200" price="50000"
+- 86명 예약 (http POST http://localhost:8082/reservations reservationId=3  scheduleId=1 reservationCount=86)
 
-![image](https://user-images.githubusercontent.com/84000853/122401363-7bec9880-cfb7-11eb-88b6-4fb3febc23f7.png)
-
-
-
-**3. 뮤지컬 예약 후, 각 마이크로 서비스내 Pub/Sub을 통해 변경된 데이터 확인**
-
-3.1 뮤지컬 정보 조회 (좌석수량 차감여부 확인)  --> 좌석수가 75로 줄어듦
-- http GET http://localhost:8081/musicals/1
-![image](https://user-images.githubusercontent.com/84000853/122401410-87d85a80-cfb7-11eb-96a2-a63c95ebba9d.png)
-   
-3.2 요금결제 내역 조회     --> 2 Row 생성 : Reservation 생성 2건
-- http GET http://localhost:8083/payments
-![image](https://user-images.githubusercontent.com/84000853/122401517-a50d2900-cfb7-11eb-814f-a8eb7789d8a6.png)
-
-       
-3.3 알림 조회              --> 2 Row 생성 : PaymentApproved 생성 2건
-- http GET http://localhost:8084/notices
-![image](https://user-images.githubusercontent.com/84000853/122401559-af2f2780-cfb7-11eb-903e-faf850510de7.png)
-
-       
-3.4 마이페이지 조회        --> 2 Row 생성 : Reservation 생성 2건 후 > PaymentApproved 로 업데이트됨
-- http GET http://localhost:8085/myPages
-![image](https://user-images.githubusercontent.com/84000853/122401619-bb1ae980-cfb7-11eb-874c-af75fc0fde93.png)
+![image](https://user-images.githubusercontent.com/82069747/124421090-b453eb00-dd9b-11eb-93bc-1ec0b59b82ed.png)
 
 
 
-**4. 사용자가 뮤지컬 예약 취소**
+**3. 예약 취소**
 
-4.1 예약번호 #1을 취소함
+- 예약 취소 (http DELETE http://localhost:8082/reservations/1)
+- 예약가능 인원 확인 (http GET http://localhost:8081/schedules/1)
+![image](https://user-images.githubusercontent.com/82069747/124421254-039a1b80-dd9c-11eb-8b75-be92af416eef.png)
 
-- http DELETE http://localhost:8082/reservations/1
-
-![image](https://user-images.githubusercontent.com/84000853/122401687-c837d880-cfb7-11eb-983f-7b653ebe25da.png)
+- Mypage확인 (http GET http://localhost:8084/myPages/1)
+![image](https://user-images.githubusercontent.com/82069747/124421339-380dd780-dd9c-11eb-948a-93fd37783342.png)
 
    
-4.2 취소내역 확인 (#2만 남음)
-
-- http GET http://localhost:8082/reservations
-
-![image](https://user-images.githubusercontent.com/84000853/122401728-d128aa00-cfb7-11eb-9eb1-9b08498328ea.png)
-
-
-
-**5. 뮤지컬 예약 취소 후, 각 마이크로 서비스내 Pub/Sub을 통해 변경된 데이터 확인**
-
-5.1 뮤지컬 정보 조회 (좌석수량 증가여부 확인)  --> 좌석수가 85로 늘어남
-- http GET http://localhost:8081/musicals/1
-![image](https://user-images.githubusercontent.com/84000853/122401785-e1408980-cfb7-11eb-95f9-31487e09c955.png)
-
-5.2 요금결제 내역 조회    --> 1번 예약에 대한 결제건이 paymentCancelled 로 변경됨 (UPDATE)
-- http GET http://localhost:8083/payments
-![image](https://user-images.githubusercontent.com/84000853/122401809-e69dd400-cfb7-11eb-8216-8fb55d87c36f.png)
-
-5.3 알림 조회             --> 1번 예약에 대한 예약취소건이 paymentCancelled 로 1 row 추가됨 (INSERT)
-- http GET http://localhost:8084/notices
-![image](https://user-images.githubusercontent.com/84000853/122401844-eef60f00-cfb7-11eb-8303-52bd835137ce.png)
-
-5.4 마이페이지 조회       --> 1 Row 추가 생성 : PaymentCancelled 생성 1건
-- http GET http://localhost:8085/myPages
-![image](https://user-images.githubusercontent.com/84000853/122401898-f87f7700-cfb7-11eb-86ee-7e5b7ce2d814.png)
-
-       
-
 
 
 ## 3. 운영
