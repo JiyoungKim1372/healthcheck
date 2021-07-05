@@ -338,7 +338,7 @@ az acr build --registry user03acr --image user03acr.azurecr.io/schedule:v1 .
 
 **컨테이너라이징: 디플로이 생성 확인**
 ```
-az acr build --registry user03acr --image user03acr.azurecr.io/schedule:v1 .
+kubectl create deploy schedule --image=user03acr.azurecr.io/schedule:v1 -n healthcheck
 kubectl get all -n healthcheck
 ```
 
@@ -413,7 +413,7 @@ siege -c100 -t60S -r10 -v --content-type "application/json" 'http://reservation:
 - 레포트결과
 ![image](https://user-images.githubusercontent.com/82069747/124429292-a8baf100-dda8-11eb-8b17-9eb3644f38e7.png)
 
-서킷브레이킹 동작확인완료
+- 서킷브레이킹 동작확인완료
 
 
 ### 3.3. Autoscale(HPA)
@@ -488,15 +488,15 @@ kubectl get deploy reservation -w -n healthcheck
 ### 3.5. Zero-downtime deploy(Readiness Probe)
 - Zero-downtime deploy를 위해 Autoscale 및 CB 설정 제거 
 - readiness 옵션이 없는 reservation 배포
-- seige로 부하 준비 후 실행 
-- seige로 부하 실행 중 reservation 새로운 버전의 이미지로 교체
+- siege로 부하 준비 후 실행 
+- siege로 부하 실행 중 reservation 새로운 버전의 이미지로 교체
 - readiness 옵션이 없는 경우 배포 중 서비스 요청처리 실패
 
 - deployment.yml에 readiness 옵션제거
 
 ![image](https://user-images.githubusercontent.com/82069747/124470971-44635600-ddd7-11eb-84e4-7ede1ed30b5f.png)
 
-- seige 부하 실행 중 reservation 서비스 이미지 교체 (접속 에러 뱔생) 
+- siege 부하 실행 중 reservation 서비스 이미지 교체 (접속 에러 뱔생) 
 
 ![image](https://user-images.githubusercontent.com/82069747/124471143-7a083f00-ddd7-11eb-891a-8174d5bda947.png)
 
