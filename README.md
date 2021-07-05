@@ -175,11 +175,12 @@ delivery 서비스는 HSQLDB 를 사용하도록 구성되어 있어서, DB 부�
 
 **reservation 서비스의 pom.xml 내 DB 설정부분**
 
-![image](https://user-images.githubusercontent.com/82069747/124418949-8f5d7900-dd97-11eb-9047-e080bfd1b40d.png)
+![image](https://user-images.githubusercontent.com/82069747/124422012-8ff90e00-dd9d-11eb-9c95-d02e49c77521.png)
+
 
 **reservation 서비스 spring boot 기동 로그**
 
-![image](https://user-images.githubusercontent.com/82069747/124418732-1b22d580-dd97-11eb-9714-5f201dd21ea5.png)
+![image](https://user-images.githubusercontent.com/82069747/124418949-8f5d7900-dd97-11eb-9047-e080bfd1b40d.png)
 
 
 **delivery 서비스의 pom.xml 내 DB 설정부분**
@@ -190,8 +191,7 @@ delivery 서비스는 HSQLDB 를 사용하도록 구성되어 있어서, DB 부�
 
 **delivery 서비스 spring boot 기동 로그**
 
-![image](https://user-images.githubusercontent.com/84003381/122398334-be60a600-cfb4-11eb-8915-3eb916e0d831.png)
-
+![image](https://user-images.githubusercontent.com/82069747/124418732-1b22d580-dd97-11eb-9714-5f201dd21ea5.png)
 
 
 ### 2.3. Gateway 적용
@@ -210,12 +210,6 @@ http GET http://gateway:8080/reservations/3
 
 ### 2.4. Saga, CQRS, Correlation, Req/Resp
 
-뮤지컬 예약 시스템은 각 마이크로 서비스가 아래와 같은 기능으로 구성되어 있으며,
-마이크로 서비스간 통신은 기본적으로 Pub/Sub 을 통한 Event Driven 구조로 동작하도록 구성하였음.
-
-![image](https://user-images.githubusercontent.com/84003381/122408528-6da17b00-cfbd-11eb-9651-49f754758615.png)
-
-![image](https://user-images.githubusercontent.com/84003381/122410244-b574d200-cfbe-11eb-8b49-3dad0dafe79b.png)
 
 
 <구현기능별 요약>
@@ -227,17 +221,16 @@ http GET http://gateway:8080/reservations/3
 [CQRS]
 - customercenter (myPage) 서비스의 경우의 경우, 각 마이크로 서비스로부터 Pub/Sub 구조를 통해 받은 데이터를 이용하여 자체 DB로 View를 구성함.
 - 이를 통해 여러 마이크로 서비스에 존재하는 DB간의 Join 등이 필요 없으며, 성능에 대한 이슈없이 빠른 조회가 가능함.
-- 테스트 시나리오의 3.4 과 5.4 항목에 해당
 
 [Correlation]
-- 예약을 하게되면 reservation > delivery > MyPage로 예약정보가 Assigned 되고, 예약이 취소가 되면 Status가 deliveryCancelled로 Update 되는 것을 볼 수 있다.
+- 예약을 하게되면 reservation > delivery > MyPage로 예약정보가 Assigned 되고, 예약이 취소가 되면 reservationStatus가 Reservation Cancelled, delivery가 취소되면 deliveryStatus가 delivery Cancelled 로 Update 되는 것을 볼 수 있다.
 - 또한 Correlation Key를 구현하기 위해 각 마이크로서비스에서 관리하는 데이터의 Id값을 전달받아서 서비스간의 연관 처리를 수행하였다.
 - 이 결과로 서로 다른 마이크로 서비스 간에 트랜잭션이 묶여 있음을 알 수 있다.
 
 [Req/Resp]
 - schedule 마이크로서비스의 예약가능인원을 초과한 예약 시도시에는, reservation 마이크로서비스에서 예약이 되지 않도록 처리함
 - FeignClient 를 이용한 Req/Resp 연동
-- 테스트 시나리오의 2.1, 2.2, 2.3 항목에 해당하며, 동기호출 결과는 3.1(예약성공시)과 5.1(예약실패시)에서 확인할 수 있다.
+
 ```
 
 ![image](https://user-images.githubusercontent.com/84003381/122410244-b574d200-cfbe-11eb-8b49-3dad0dafe79b.png)
@@ -303,7 +296,6 @@ http GET http://gateway:8080/reservations/3
 ![image](https://user-images.githubusercontent.com/82069747/124421339-380dd780-dd9c-11eb-948a-93fd37783342.png)
 
    
-
 
 ## 3. 운영
 
