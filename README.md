@@ -405,7 +405,7 @@ kubectl exec -it pod/siege-d484db9c-2t6ls -c siege -n healthcheck -- /bin/bash
 ```
 siege -c100 -t60S -r10 -v --content-type "application/json" 'http://reservation:8080/reservations POST {"reservationId": “1”, "scheduleId”:”7”, “reservationCount”:1}’
 ```
-- 부하 발생하여 CB가 발동하여 요청 부분적으로 실패 발생 
+- 부하 발생하여 CB가 발동하여 요청 실패처리하였고, 밀린 부하가 schedule에서 처리되면서 다시 reservation(예약)을 받기 시작함
 
 ![image](https://user-images.githubusercontent.com/82069747/124429070-609bce80-dda8-11eb-965f-a9f9a871b5fc.png)
 
