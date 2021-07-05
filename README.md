@@ -223,7 +223,9 @@ http GET http://gateway:8080/reservations/3
 - 이를 통해 여러 마이크로 서비스에 존재하는 DB간의 Join 등이 필요 없으며, 성능에 대한 이슈없이 빠른 조회가 가능함.
 
 [Correlation]
-- 예약을 하게되면 reservation > delivery > MyPage로 예약정보가 Assigned 되고, 예약이 취소가 되면 reservationStatus가 Reservation Cancelled, delivery가 취소되면 deliveryStatus가 delivery Cancelled 로 Update 되는 것을 볼 수 있다.
+- 예약을 하게되면 reservation > delivery > MyPage로 예약정보가 Assigned 되고, 
+  예약이 취소가 되면 reservationStatus가 Reservation Cancelled, 
+  delivery가 취소되면 deliveryStatus가 delivery Cancelled 로 Update 되는 것을 볼 수 있다.
 - 또한 Correlation Key를 구현하기 위해 각 마이크로서비스에서 관리하는 데이터의 Id값을 전달받아서 서비스간의 연관 처리를 수행하였다.
 - 이 결과로 서로 다른 마이크로 서비스 간에 트랜잭션이 묶여 있음을 알 수 있다.
 
@@ -361,7 +363,8 @@ kubectl get all -n healthcheck
 
 - deployment.yml을 사용하여 배포 (reservation의 deployment.yml 추가)
 
-![image](https://user-images.githubusercontent.com/84000848/122332320-2d1c1000-cf71-11eb-8766-b494f157f247.png)
+![image](https://user-images.githubusercontent.com/82069747/124424752-9047d800-dda2-11eb-8f8e-03d0fcef30f0.png)
+
 - deployment.yml로 서비스 배포
 
 ```
@@ -370,9 +373,8 @@ kubectl apply -f kubernetes/deployment.yml
 
 
 ### 3.2. 동기식 호출 / 서킷 브레이킹 / 장애격리
-- 시나리오는 예약(reservation)-->공연(musical) 시의 연결을 RESTful Request/Response 로 연동하여 구현이 되어있고, 예약이 과도할 경우 CB 를 통하여 장애격리.
+- 시나리오는 예약(reservation)--> 건강검진스케줄(schedule)의 연결을 RESTful Request/Response 로 연동하여 구현이 되어있고, 예약이 과도할 경우 CB 를 통하여 장애격리.
 - Hystrix 설정: 요청처리 쓰레드에서 처리시간이 250 밀리가 넘어서기 시작하여 어느정도 유지되면 CB 회로가 닫히도록 (요청을 빠르게 실패처리, 차단) 설정
-
 
 ```
 # circuit breaker 설정 start
@@ -387,28 +389,29 @@ hystrix:
       execution.isolation.thread.timeoutInMilliseconds: 250
 # circuit breaker 설정 end
 ```
+
+![image](https://user-images.githubusercontent.com/82069747/124426018-5d9edf00-dda4-11eb-89b6-1c2f1640dfc2.png)
+
 - 부하테스터 siege 툴을 통한 서킷 브레이커 동작 확인: 동시사용자 100명, 60초 동안 실시
 시즈 접속
 
 
 ```
-kubectl exec -it pod/siege-d484db9c-9dkgd -c siege -n outerpark -- /bin/bash
+kubectl exec -it pod/siege-d484db9c-2t6ls -c siege -n healthcheck -- /bin/bash
 ```
-- 부하테스트 동시사용자 100명 60초 동안 공연예약 수행
+- 부하테스트 동시사용자 100명 60초 동안 예약 수행
 
 
 ```
-siege -c100 -t60S -r10 -v --content-type "application/json" 'http://reservation:8080/reservations POST {"musicalId": "1003", "seats":1}'
+siege -c100 -t60S -r10 -v --content-type "application/json" 'http://reservation:8080/reservations POST {"reservationId": “1”, "scheduleId”:”7”, “reservationCount”:1}’
 ```
-- 부하 발생하여 CB가 발동하여 요청 실패처리하였고, 밀린 부하가 musical에서 처리되면서 다시 reservation 받기 시작
+- 부하 발생하여 CB가 발동하여 요청 부분적으로 실패 발생 
 
+![image](https://user-images.githubusercontent.com/82069747/124429070-609bce80-dda8-11eb-965f-a9f9a871b5fc.png)
 
-![image](https://user-images.githubusercontent.com/84000848/122355980-52b71280-cf8d-11eb-9d48-d9848d7189bc.png)
 
 - 레포트결과
-
-
-![image](https://user-images.githubusercontent.com/84000848/122356067-68c4d300-cf8d-11eb-9186-2dc33ebc806d.png)
+![image](https://user-images.githubusercontent.com/82069747/124429292-a8baf100-dda8-11eb-8b17-9eb3644f38e7.png)
 
 서킷브레이킹 동작확인완료
 
@@ -428,49 +431,42 @@ resources:
 - 예약 시스템에 대한 replica 를 동적으로 늘려주도록 HPA 를 설정한다. 설정은 CPU 사용량이 15프로를 넘어서면 replica 를 10개까지 늘려준다
 
 ```
-kubectl autoscale deploy reservation --min=1 --max=10 --cpu-percent=15 -n outerpark
+kubectl autoscale deploy reservation --min=1 --max=10 --cpu-percent=15 -n healthcheck
+```
+![image](https://user-images.githubusercontent.com/82069747/124445456-87fb9700-ddba-11eb-90b7-34420629f460.png)
+
+![image](https://user-images.githubusercontent.com/82069747/124445794-d3ae4080-ddba-11eb-98e6-7eec8c9d0ed7.png)
+
+
+- 부하테스트 동시사용자 1000명 60초 동안 예약조회 수행
+
+```
+siege -c1000 -t60S -r10 -v --content-type "application/json" 'http://reservation:8080/reservations'
 ```
 
-![image](https://user-images.githubusercontent.com/84000848/122361127-edb1eb80-cf91-11eb-93ff-2c386af48961.png)
-
-- 부하테스트 동시사용자 200명 120초 동안 공연예약 수행
-
-```
-siege -c200 -t120S -r10 -v --content-type "application/json" 'http://reservation:8080/reservations POST {"musicalId": "1003", "seats":1}'
-```
-
-- 최초수행 결과
-
-![image](https://user-images.githubusercontent.com/84000848/122360142-21d8dc80-cf91-11eb-9868-85dffcc21309.png)
 
 - 오토스케일 모니터링 수행
 
 
 ```
-kubectl get deploy reservation -w -n outerpark
+kubectl get deploy reservation -w -n healthcheck
 ```
 
-![image](https://user-images.githubusercontent.com/84000848/122361571-55683680-cf92-11eb-802b-28f47fdada7b.png)
-
-- 부하테스트 재수행 시 Availability가 높아진 것을 확인
+![image](https://user-images.githubusercontent.com/82069747/124446071-09ebc000-ddbb-11eb-8085-12d4862754ec.png)
 
 
-![image](https://user-images.githubusercontent.com/84000848/122361773-86e10200-cf92-11eb-9ab7-c8f62b519174.png)
+- 부하가 증가됨에 따라서 replica 를 10개 까지 늘어났다가 다시 줄어 드는 것을 확인 가능함 
 
--  replica 를 10개 까지 늘어났다가 부하가 적어져서 다시 줄어드는걸 확인 가능 함
+![image](https://user-images.githubusercontent.com/82069747/124446406-5931f080-ddbb-11eb-83c9-9fa9fd9b0bc8.png)
 
-
-![image](https://user-images.githubusercontent.com/84000848/122361938-ad06a200-cf92-11eb-9a55-35f9b6ceefe0.png)
 
 ### 3.4. Self-healing (Liveness Probe)
 
-- musical 서비스 정상 확인
+- schedule 서비스 정상 확인
 
+![image](https://user-images.githubusercontent.com/82069747/124464447-2bef3d80-ddcf-11eb-9777-a9c92bc595b7.png)
 
-![image](https://user-images.githubusercontent.com/84000848/122398259-adb03000-cfb4-11eb-9f49-5cf7018b81d4.png)
-
-
-- musical의 deployment.yml 에 Liveness Probe 옵션 변경하여 계속 실패하여 재기동 되도록 yml 수정
+- schedule deployment.yml 에 Liveness Probe 옵션 변경하여 계속 실패하여 재기동 되도록 yml 수정
 ```
           livenessProbe:
             tcpSocket:
@@ -478,15 +474,15 @@ kubectl get deploy reservation -w -n outerpark
             initialDelaySeconds: 5
             periodSeconds: 5	
 ```
-![image](https://user-images.githubusercontent.com/84000848/122398788-2dd69580-cfb5-11eb-91ce-bc82d7cf66a1.png)
+![image](https://user-images.githubusercontent.com/82069747/124464518-3f9aa400-ddcf-11eb-8d45-97fde31d88c6.png)
 
--musical pod에 liveness가 적용된 부분 확인
+-schedule pod에 liveness가 적용된 부분 확인
 
-![image](https://user-images.githubusercontent.com/84000848/122400529-c4578680-cfb6-11eb-8d06-a54f37ced872.png)
+![image](https://user-images.githubusercontent.com/82069747/124464566-4f19ed00-ddcf-11eb-8ddf-6b7d46a0a0a0.png)
 
--musical 서비스의 liveness가 발동되어 7번 retry 시도 한 부분 확인
+-scheduel 서비스의 liveness가 발동되어 5번 retry 시도 한 부분 확인
 
-![image](https://user-images.githubusercontent.com/84000848/122401681-c66e1500-cfb7-11eb-9417-4ff189919f62.png)
+![image](https://user-images.githubusercontent.com/82069747/124464604-5ccf7280-ddcf-11eb-96f3-410807e99254.png)
 
 
 ### 3.5. Zero-downtime deploy(Readiness Probe)
@@ -496,84 +492,84 @@ kubectl get deploy reservation -w -n outerpark
 - seige로 부하 실행 중 reservation 새로운 버전의 이미지로 교체
 - readiness 옵션이 없는 경우 배포 중 서비스 요청처리 실패
 
-![image](https://user-images.githubusercontent.com/84000848/122414855-69c42780-cfc2-11eb-8955-30e623e721c6.png)
+- deployment.yml에 readiness 옵션제거
+
+![image](https://user-images.githubusercontent.com/82069747/124470971-44635600-ddd7-11eb-84e4-7ede1ed30b5f.png)
+
+- seige 부하 실행 중 reservation 서비스 이미지 교체 (접속 에러 뱔생) 
+
+![image](https://user-images.githubusercontent.com/82069747/124471143-7a083f00-ddd7-11eb-891a-8174d5bda947.png)
+
+![image](https://user-images.githubusercontent.com/82069747/124471313-afad2800-ddd7-11eb-9a0c-a6fc29dcf1ac.png)
 
 - deployment.yml에 readiness 옵션을 추가
 
-![image](https://user-images.githubusercontent.com/84000848/122416039-5d8c9a00-cfc3-11eb-84b1-9eb4ce1b6e9d.png)
+![image](https://user-images.githubusercontent.com/82069747/124471367-bf2c7100-ddd7-11eb-9d63-7baeed2973ed.png)
 
--readiness적용된 deployment.yml 적용
 
-```
-kubectl apply -f kubernetes/deployment.yml
-```
 -새로운 버전의 이미지로 교체
 
 ```
-az acr build --registry outerparkskacr --image outerparkskacr.azurecr.io/reservation:v3 .
-kubectl set image deploy reservation reservation=outerparkskacr.azurecr.io/reservation:v3 -n outerpark
+az acr build --registry user03acr --image user03acr.azurecr.io/reservation:v8 .
+kubectl set image deploy reservation reservation=user03acr.azurecr.io/reservation:v8 -n healthcheck
 ```
+
+- 이미지 변경 전 reservation pod (1개)
+
+![image](https://user-images.githubusercontent.com/82069747/124471534-ef740f80-ddd7-11eb-8070-57aa741269e6.png)
+
 
 -기존 버전과 새 버전의 reservation pod 공존 중
 
-![image](https://user-images.githubusercontent.com/84000848/122417105-36829800-cfc4-11eb-9849-054cf58119f2.png)
+![image](https://user-images.githubusercontent.com/82069747/124471792-4548b780-ddd8-11eb-9398-8dd77a96c855.png)
 
 -Availability: 100.00 % 확인
 
-![image](https://user-images.githubusercontent.com/84000848/122417302-5a45de00-cfc4-11eb-87d1-cc7482113a33.png)
+![image](https://user-images.githubusercontent.com/82069747/124471848-572a5a80-ddd8-11eb-9e42-726b73029024.png)
+
 
 ### 3.6. Config Map
 application.yml 설정
 
 -default부분
 
-![image](https://user-images.githubusercontent.com/84000848/122422699-51570b80-cfc8-11eb-9cb9-f0fe332fb26a.png)
+![image](https://user-images.githubusercontent.com/82069747/124475661-ec2f5280-dddc-11eb-8809-5b72bcef3c22.png)
 
 -docker 부분
 
-![image](https://user-images.githubusercontent.com/84000848/122422842-70559d80-cfc8-11eb-8a0f-8bf10957140f.png)
+![image](https://user-images.githubusercontent.com/82069747/124475680-f3566080-dddc-11eb-89a7-5480224f9f39.png)
 
 Deployment.yml 설정
 
-![image](https://user-images.githubusercontent.com/84000848/122423101-a3982c80-cfc8-11eb-821f-8c3aad8be16f.png)
+![image](https://user-images.githubusercontent.com/82069747/124475714-fe10f580-dddc-11eb-87f2-a78991d1f555.png)
 
 config map 생성 후 조회
 ```
-kubectl create configmap apiurl --from-literal=url=http://musical:8080 -n outerpark
+kubectl create configmap apiurl --from-literal=url=http://schedule:8080 -n healthcheck
 ```
+![image](https://user-images.githubusercontent.com/82069747/124476058-6233b980-dddd-11eb-834e-c7be6f1ed712.png)
 
-![image](https://user-images.githubusercontent.com/84000848/122423850-346f0800-cfc9-11eb-90d8-9cb6c55bec21.png)
 
-- 설정한 url로 주문 호출
+- 설정한 url로 예약 호출
 ```
-http POST http://reservation:8080/reservations musicalId=1001 seats=10
+http POST http://reservation:8080/reservations reservationId=2  scheduleId=1 reservationCount=1
 ```
-![image](https://user-images.githubusercontent.com/84000848/122424027-5a94a800-cfc9-11eb-8fa9-363b80e6b899.png)
+![image](https://user-images.githubusercontent.com/82069747/124476559-f0a83b00-dddd-11eb-90e7-bda34c6400a9.png)
+
 
 -configmap 삭제 후 app 서비스 재시작
 
 ```
-kubectl delete configmap apiurl -n outerpark
-kubectl get pod/reservation-57d8f8c4fd-74csz -n outerpark -o yaml | kubectl replace --force -f-
+kubectl delete configmap apiurl -n healthcheck
+kubectl get pod/reservation-59b9cd8bcb-x2npx -n healthcheck -o yaml | kubectl replace --force -f-
 ```
 
-![image](https://user-images.githubusercontent.com/84000848/122424266-89ab1980-cfc9-11eb-8683-ac313e971ed6.png)
+-configmap 삭제된 상태에서 예약 호출
+```
+http POST http://reservation:8080/reservations reservationId=2  scheduleId=20 reservationCount=1
+```
 
+![image](https://user-images.githubusercontent.com/82069747/124476681-17ff0800-ddde-11eb-84b8-678daac3275b.png)
 
--configmap 삭제된 상태에서 주문 호출
-
-http POST http://reservation:8080/reservations reservationId=1  scheduleId=1 reservationCount=10 
-
-![image](https://user-images.githubusercontent.com/82069747/124409043-82825a80-dd82-11eb-9823-b58aa7985a30.png)
-
-![image](https://user-images.githubusercontent.com/82069747/124409250-e573f180-dd82-11eb-8fb8-b4263226adc8.png)
-
-![image](https://user-images.githubusercontent.com/82069747/124409605-95495f00-dd83-11eb-86cf-370a9deb780c.png)
-
-kubectl apply -f kubernetes/deployment.yml
-
-![image](https://user-images.githubusercontent.com/84000848/122423447-e3f7aa80-cfc8-11eb-8760-6df5eb08f039.png)
-
-![image](https://user-images.githubusercontent.com/84000848/122423364-d3dfcb00-cfc8-11eb-8b35-9145c00659b9.png)
 
 
