@@ -200,7 +200,8 @@ delivery 서비스는 HSQLDB 를 사용하도록 구성되어 있어서, DB 부�
 ### 2.3. Gateway 적용
 
 **gateway > application.yml 설정**
-![image](https://user-images.githubusercontent.com/84000848/122344337-a6236380-cf81-11eb-83d9-98f2311b4f6a.png)
+
+![image](https://user-images.githubusercontent.com/82069747/124408584-7c3fae80-dd81-11eb-81cb-af5208fd67fc.png)
 
 **gateway 테스트**
 
@@ -254,27 +255,39 @@ http POST http://gateway:8080/musicals musicalId=1003 name=HOT reservableSeat=10
 
 
 
-**1. MD가 뮤지컬 정보 등록**
+**1. 관리자가 건강검진 일정정보 등록**
 
-- http POST http://localhost:8081/musicals musicalId="1" name="Frozen" reservableSeat="100"
+- http POST http://schedule:8080/schedules scheduleId=1 availableCount=100
 
-![image](https://user-images.githubusercontent.com/84000853/122401028-316b1c00-cfb7-11eb-9f20-32f02f150fc9.png)
+![image](https://user-images.githubusercontent.com/82069747/124410717-0853d500-dd86-11eb-8d7a-0863aa18ff47.png)
 
 
-
-**2. 사용자가 뮤지컬 예약**
+**2. 고객이 건강검진 예약**
 
 2.1 정상예약 #1
 
-- http POST http://localhost:8082/reservations musicalId="1" seats="10" price="50000"
+http POST http://reservation:8080/reservations reservationId=1  scheduleId=1 reservationCount=10
+
+![image](https://user-images.githubusercontent.com/82069747/124410776-24577680-dd86-11eb-9b20-f3d4502248df.png)
+
+![image](https://user-images.githubusercontent.com/82069747/124410910-5f59aa00-dd86-11eb-9394-d856590017e5.png)
+
+![image](https://user-images.githubusercontent.com/82069747/124411170-faeb1a80-dd86-11eb-9b11-caf8e1df30e3.png)
+
 
 2.2 정상예약 #2
 
-- http POST http://localhost:8082/reservations musicalId="1" seats="15" price="50000"
+- http POST http://reservation:8080/reservations reservationId=2  scheduleId=1 reservationCount=5 
 
-![image](https://user-images.githubusercontent.com/84000853/122401281-6aa38c00-cfb7-11eb-82f1-e86f114466c5.png)
+![image](https://user-images.githubusercontent.com/82069747/124410994-8ca65800-dd86-11eb-8265-1ecade763e01.png)
 
-2.3 MD가 관리하는 뮤지컬 정보상의 좌석수(잔여좌석수)를 초과한 예약 시도시에는 예약이 되지 않도록 처리함
+![image](https://user-images.githubusercontent.com/82069747/124411027-9f209180-dd86-11eb-8429-2caad1588722.png)
+
+![image](https://user-images.githubusercontent.com/82069747/124411207-0e968100-dd87-11eb-8364-01833ad158bb.png)
+
+
+
+2.3 예악 가능한 인원을 초과하여 예약시도 시에는 예약이 되지 않도록 처리함
 
 - FeignClient를 이용한 Req/Resp 연동
 - http POST http://localhost:8082/reservations musicalId="1" seats="200" price="50000"
@@ -351,62 +364,60 @@ http POST http://gateway:8080/musicals musicalId=1003 name=HOT reservableSeat=10
 
 **네임스페이스 만들기**
 ```
-kubectl create ns outerpark
+kubectl create ns healthcheck
 kubectl get ns
 ```
-
-![image](https://user-images.githubusercontent.com/84000848/122322035-c4786780-cf5f-11eb-904f-48d96217d2a1.png)
+![image](https://user-images.githubusercontent.com/82069747/124406516-8a3f0080-dd7c-11eb-8d03-1fea063e8c62.png)
 
 
 **소스가져오기**
 ```
-git clone https://github.com/hyucksookwon/outerpark.git
+git clone https://github.com/JiyoungKim1372/healthcheck.git
 ```
-
-
-![image](https://user-images.githubusercontent.com/84000848/122329826-0a87f800-cf6d-11eb-927a-688f208fab5a.png)
 
 **빌드하기**
 ```
-cd outerpark/reservation
-mvn package
+cd schedule   
+mvn package -Dmaven.test.skip=true
 ```
-![image](https://user-images.githubusercontent.com/84000848/122330314-eb3d9a80-cf6d-11eb-82cd-8faf7b0c1de7.png)
+![image](https://user-images.githubusercontent.com/82069747/124406325-0f75e580-dd7c-11eb-984c-1418a913140b.png)
+
 
 **도커라이징: Azure 레지스트리에 도커 이미지 빌드 후 푸시하기**
 ```
-az acr build --registry outerparkskacr --image outerparkskacr.azurecr.io/reservation:latest .
+az acr build --registry user03acr --image user03acr.azurecr.io/schedule:v1 .
 ```
+![image](https://user-images.githubusercontent.com/82069747/124406279-dc335680-dd7b-11eb-97bb-6c4f35d88c6b.png)
 
-![image](https://user-images.githubusercontent.com/84000848/122330874-e3cac100-cf6e-11eb-89bf-771e533c66ef.png)
 
-![image](https://user-images.githubusercontent.com/84000848/122330924-f513cd80-cf6e-11eb-9c72-0562a27eabcd.png)
+![image](https://user-images.githubusercontent.com/82069747/124406126-68914980-dd7b-11eb-8d76-cb35ade9dd7b.png)
 
-![image](https://user-images.githubusercontent.com/84000848/122331422-c2b6a000-cf6f-11eb-8c6d-88820b5c0e20.png)
+
 
 **컨테이너라이징: 디플로이 생성 확인**
 ```
-kubectl create deploy reservation --image=outerparkskacr.azurecr.io/reservation:latest -n outerpark
-kubectl get all -n outerpark
+az acr build --registry user03acr --image user03acr.azurecr.io/schedule:v1 .
+kubectl get all -n healthcheck
 ```
 
-![image](https://user-images.githubusercontent.com/84000848/122331554-fb567980-cf6f-11eb-83ac-9578bd657c1c.png)
+![image](https://user-images.githubusercontent.com/82069747/124406769-2ec14280-dd7d-11eb-95d5-082309833203.png)
 
 
 **컨테이너라이징: 서비스 생성 확인**
 
 ```
-kubectl expose deploy reservation --type="ClusterIP" --port=8080 -n outerpark
-kubectl get all -n outerpark
+kubectl create deploy schedule --image=user03acr.azurecr.io/schedule:v1 -n healthcheck
+kubectl get all -n healthcheck
 ```
 
-![image](https://user-images.githubusercontent.com/84000848/122331656-2771fa80-cf70-11eb-8479-aa6cfe567981.png)
+![image](https://user-images.githubusercontent.com/82069747/124407554-2bc75180-dd7f-11eb-9697-433950d71b1c.png)
 
 
-**payment, musical, notice, customercenter, gateway에도 동일한 작업 반복**
+**reservation, delivery, customercenter, gateway에도 동일한 작업 반복**
 *최종 결과
 
-![image](https://user-images.githubusercontent.com/84000848/122349147-eafdc900-cf86-11eb-96bb-a50afe56ad58.png)
+![image](https://user-images.githubusercontent.com/82069747/124408275-d2f8b880-dd80-11eb-99e0-36f8ba2d2a27.png)
+
 
 - deployment.yml을 사용하여 배포 (reservation의 deployment.yml 추가)
 
@@ -610,6 +621,16 @@ kubectl get pod/reservation-57d8f8c4fd-74csz -n outerpark -o yaml | kubectl repl
 
 
 -configmap 삭제된 상태에서 주문 호출
+
+http POST http://reservation:8080/reservations reservationId=1  scheduleId=1 reservationCount=10 
+
+![image](https://user-images.githubusercontent.com/82069747/124409043-82825a80-dd82-11eb-9823-b58aa7985a30.png)
+
+![image](https://user-images.githubusercontent.com/82069747/124409250-e573f180-dd82-11eb-8fb8-b4263226adc8.png)
+
+![image](https://user-images.githubusercontent.com/82069747/124409605-95495f00-dd83-11eb-86cf-370a9deb780c.png)
+
+kubectl apply -f kubernetes/deployment.yml
 
 ![image](https://user-images.githubusercontent.com/84000848/122423447-e3f7aa80-cfc8-11eb-8760-6df5eb08f039.png)
 
