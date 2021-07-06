@@ -40,7 +40,8 @@ healthchek reservation
 
 
 ### 헥사고날 아키텍처 다이어그램 도출
-![image](https://user-images.githubusercontent.com/82069747/122672427-70db7780-d206-11eb-9721-20e0eb5a186c.png)
+
+![image](https://user-images.githubusercontent.com/82069747/124525415-3561bf80-de3a-11eb-8d76-70af4d29552f.png)
 
 ## 2. 구현
 분석/설계 단계에서 도출된 헥사고날 아키텍처에 따라, 구현한 각 서비스를 로컬에서 실행하는 방법은 아래와 같다 (각각의 포트넘버는 8081 ~ 8084 이다)
@@ -358,7 +359,8 @@ kubectl get all -n healthcheck
 **reservation, delivery, customercenter, gateway에도 동일한 작업 반복**
 *최종 결과
 
-![image](https://user-images.githubusercontent.com/82069747/124408275-d2f8b880-dd80-11eb-99e0-36f8ba2d2a27.png)
+![image](https://user-images.githubusercontent.com/82069747/124526011-5fb47c80-de3c-11eb-9c83-2eccccc4640e.png)
+
 
 
 - deployment.yml을 사용하여 배포 (reservation의 deployment.yml 추가)
